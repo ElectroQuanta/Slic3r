@@ -9,6 +9,10 @@ option(BUILD_EXTRUDE_TIN "Build and link the extrude-tin application." OFF)
 option(PROFILE "Build with gprof profiling output." OFF)
 option(COVERAGE "Build with gcov code coverage profiling." OFF)
 
+if(CMAKE_BUILD_TYPE)
+  message("Build type: ${CMAKE_BUILD_TYPE}")
+endif(CMAKE_BUILD_TYPE)
+
 # only on newer GCCs: -ftemplate-backtrace-limit=0
 add_compile_options(-DNO_PERL  -DM_PI=3.14159265358979323846 -D_GLIBCXX_USE_C99 -DHAS_BOOL -DNOGDI -DBOOST_ASIO_DISABLE_KQUEUE)
 
