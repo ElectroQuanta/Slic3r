@@ -266,7 +266,7 @@ SLAPrint::write_svg(const std::string &outputfile) const
                 it != layer.solid_infill.expolygons.end(); ++it) {
                 std::string pd = this->_SVG_path_d(*it);
                 
-                fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"infill\" />\n",
+                fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"solid-infill\" />\n",
                     pd.c_str(), "white", "black", "0"
                 );
             }
@@ -279,7 +279,7 @@ SLAPrint::write_svg(const std::string &outputfile) const
                 for (ExPolygons::const_iterator e = infill.begin(); e != infill.end(); ++e) {
                     std::string pd = this->_SVG_path_d(*e);
                 
-                    fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"infill\" />\n",
+                    fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"internal-infill\" />\n",
                         pd.c_str(), "white", "black", "0"
                     );
                 }
@@ -357,4 +357,144 @@ SLAPrint::get_time() const
    return ts.str(); 
 }
 
+bool SLAPrint::write_svg_header() const
+{
+    if( !this->f )
+        return false;
+
+    const Sizef3 size = this->bb.size();
+    fprintf(this->f,
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+        "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n"
+        "<svg width=\"%f\" height=\"%f\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:svg=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xmlns:slic3r=\"http://slic3r.org/namespaces/slic3r\" viewport-fill=\"black\">\n"
+        "<!-- Generated using Slic3r %s http://slic3r.org/ on %s -->\n"
+            , size.x, size.y, SLIC3R_VERSION, get_time().c_str());
+
+    return true;
 }
+
+bool SLAPrint::update_layer_nr()
+{
+    if(this->layer_nr < this->layers.size() )
+    {
+        this->layer_nr++; 
+        return true; 
+    }
+    return false;
+}
+
+size_t SLAPrint::get_layers_size()
+{
+    return this->layers.size();
+}
+
+/// \brief Prints layers consecutively
+/// \param k: prints to file the correct layer id nr tag
+bool SLAPrint::write_svg_layer(const size_t k)
+{
+    if( !this->f )
+        return false;
+
+    if( !this->update_layer_nr() ) // update layer nr (if valid)
+        return false;
+    
+    const Sizef3 size = this->bb.size();
+    const double support_material_radius = sm_pillars_radius();
+    size_t i = this->layer_nr;
+    const Layer &layer = this->layers[i];
+    fprintf(f,
+        "\t<g id=\"layer%zu\" slic3r:z=\"%0.4f\" slic3r:slice-z=\"%0.4f\" slic3r:layer-height=\"%0.4f\">\n",
+        k,
+        layer.print_z,
+        layer.slice_z,
+        layer.print_z - ((i == 0) ? 0. : this->layers[i-1].print_z)
+    );
+
+    if (layer.solid) {
+        const ExPolygons &slices = layer.slices.expolygons;
+        for (ExPolygons::const_iterator it = slices.begin(); it != slices.end(); ++it) {
+            std::string pd = this->_SVG_path_d(*it);
+
+            fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:area=\"%0.4f\" />\n",
+                pd.c_str(), "white", "black", "0", unscale(unscale(it->area()))
+            );
+        }
+    } else {
+        // Perimeters.
+        for (ExPolygons::const_iterator it = layer.perimeters.expolygons.begin();
+            it != layer.perimeters.expolygons.end(); ++it) {
+            std::string pd = this->_SVG_path_d(*it);
+
+            fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"perimeter\" />\n",
+                pd.c_str(), "white", "black", "0"
+            );
+        }
+
+        // Solid infill.
+        for (ExPolygons::const_iterator it = layer.solid_infill.expolygons.begin();
+            it != layer.solid_infill.expolygons.end(); ++it) {
+            std::string pd = this->_SVG_path_d(*it);
+
+            fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"solid-infill\" />\n",
+                pd.c_str(), "white", "black", "0"
+            );
+        }
+
+        // Internal infill.
+        for (ExtrusionEntitiesPtr::const_iterator it = layer.infill.entities.begin();
+            it != layer.infill.entities.end(); ++it) {
+            const ExPolygons infill = union_ex((*it)->grow());
+
+            for (ExPolygons::const_iterator e = infill.begin(); e != infill.end(); ++e) {
+                std::string pd = this->_SVG_path_d(*e);
+
+                fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"internal-infill\" />\n",
+                    pd.c_str(), "white", "black", "0"
+                );
+            }
+        }
+    }
+
+    // don't print support material in raft layers
+    if (i >= (size_t)this->config.raft_layers) {
+        // look for support material pillars belonging to this layer
+        for (std::vector<SupportPillar>::const_iterator it = this->sm_pillars.begin(); it != this->sm_pillars.end(); ++it) {
+            if (!(it->top_layer >= i && it->bottom_layer <= i)) continue;
+
+            // generate a conic tip
+            float radius = fminf(
+                support_material_radius,
+                (it->top_layer - i + 1) * this->config.layer_height.value
+            );
+
+            fprintf(f,"\t\t<circle cx=\"%f\" cy=\"%f\" r=\"%f\" stroke-width=\"0\" fill=\"white\" slic3r:type=\"support\" />\n",
+                unscale(it->x) - this->bb.min.x,
+                size.y - (unscale(it->y) - this->bb.min.y),
+                radius
+            );
+        }
+    }
+
+    fprintf(f,"\t</g>\n");
+
+// Ensure that the output gets written.
+fflush(f);
+
+return true; 
+        
+}
+
+bool SLAPrint::write_svg_footer() const
+{
+    if( !this->f )
+        return false;
+
+    fprintf(this->f,"</svg>\n");
+    // Ensure that the output gets written.
+    fflush(this->f);
+
+    return true;
+}
+
+}
+

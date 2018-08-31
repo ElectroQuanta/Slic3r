@@ -22,6 +22,7 @@
 
 /// utility function for displaying CLI usage
 void printUsage();
+void write_svg_multiple(std::vector<SLAPrint> &prints);
 
 using namespace Slic3r;
 
@@ -131,7 +132,9 @@ main(int argc, char **argv)
         printUsage();
         return 0;
     }
-    
+
+    std::vector<SLAPrint> prints;
+    FILE *f; // open a file for writing
     for (Model &model : models) {
         if (cli_config.info) {
             // --info works on unrepaired model
@@ -156,13 +159,25 @@ main(int argc, char **argv)
             std::string outfile = cli_config.output.value;
             if (outfile.empty()) 
                 outfile = model.objects.front()->input_file + ".svg";
+            std::cout << "Export SVG\n";
 
-            SLAPrint print(&model); // initialize print with model
+           f = fopen(outfile.c_str(), "a");
+           if(!f)
+           {
+               std::cerr << "File could not be opened\n";
+               exit(1);
+           }
+            
+           SLAPrint print(&model, f); // initialize print with model and file
             print.config.apply(print_config, true); // apply configuration
             if( !print.slice() ) // slice file
                 return -1;
-            print.write_svg(outfile); // write SVG
-            boost::nowide::cout << "SVG file exported to " << outfile << std::endl;
+
+            // push into vector
+            prints.push_back(print);
+            std::cout << "Pushing into vector\n";
+            //print.write_svg(outfile); // write SVG
+            //boost::nowide::cout << "SVG file exported to " << outfile << std::endl;
         } else if (cli_config.export_3mf) {
             std::string outfile = cli_config.output.value;
             if (outfile.empty()) outfile = model.objects.front()->input_file;
@@ -241,6 +256,29 @@ main(int argc, char **argv)
             return 1;
         }
     }
+    if (cli_config.export_svg)
+    {
+        // print header (1st file)
+        prints[0].write_svg_header();
+
+        size_t cur_layer = 0; // keeps track of layer nr for all layers (for print)
+        size_t total_layers_size = 0; // gets all layers size;
+
+        // get nr of layers of all models
+        for (SLAPrint &print : prints)
+            total_layers_size += print.get_layers_size();
+
+        // print all layers to svg files alternately
+        while(cur_layer < total_layers_size)
+            for (SLAPrint &print : prints)
+                print.write_svg_layer(cur_layer++);
+
+        // print footer (1st file)
+        prints[0].write_svg_footer();
+        std::string outfile = cli_config.output.value;
+        boost::nowide::cout << "File file exported to " << outfile << std::endl;
+        fclose(f);
+    }
     
     return 0;
 }
@@ -258,4 +296,8 @@ void printUsage()
             std::cout << "** PRINT OPTIONS **\n";
         print_print_options(boost::nowide::cout);
         std::cout << "****\n";
+}
+
+void write_svg_multiple(std::vector<SLAPrint> &prints)
+{
 }
