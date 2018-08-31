@@ -35,14 +35,9 @@ slic3r_test
 compile_commands.json
 tags
 
-<<<<<<< HEAD
 # GTAGS
 .DS_Store
 .*.el
-=======
-.DS_Store
-.*.el
->>>>>>> 625ad15b50fc0b5acc3011cfb1dfdc826ba78a4e
 GPATH
 GRTAGS
 GTAGS
