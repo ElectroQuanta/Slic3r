@@ -359,28 +359,32 @@ SLAPrint::get_time() const
 
 bool SLAPrint::write_svg_header() const
 {
-    if( !this->f )
+    //if( !this->f )
+    //    return false;
+    FILE *f = fopen(this->fname.c_str(), "a");
+    if(!f)
+    {
+        std::cerr << "Could not open file\n"; 
         return false;
+    }
 
     const Sizef3 size = this->bb.size();
-    fprintf(this->f,
+    fprintf(f,
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
         "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n"
         "<svg width=\"%f\" height=\"%f\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:svg=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xmlns:slic3r=\"http://slic3r.org/namespaces/slic3r\" viewport-fill=\"black\">\n"
         "<!-- Generated using Slic3r %s http://slic3r.org/ on %s -->\n"
             , size.x, size.y, SLIC3R_VERSION, get_time().c_str());
 
+    fflush(f);
+    fclose(f);
+
     return true;
 }
 
-bool SLAPrint::update_layer_nr()
+bool SLAPrint::is_layer_nr_valid()
 {
-    if(this->layer_nr < this->layers.size() )
-    {
-        this->layer_nr++; 
-        return true; 
-    }
-    return false;
+    return (this->layer_nr < this->layers.size());
 }
 
 size_t SLAPrint::get_layers_size()
@@ -392,11 +396,19 @@ size_t SLAPrint::get_layers_size()
 /// \param k: prints to file the correct layer id nr tag
 bool SLAPrint::write_svg_layer(const size_t k)
 {
-    if( !this->f )
+    FILE *f = fopen(this->fname.c_str(), "a");
+    if(!f)
+    {
+        std::cerr << "Could not open file\n"; 
+        return false;
+    }
+
+    // check layer_nr
+    if( !this->is_layer_nr_valid() )
         return false;
 
-    if( !this->update_layer_nr() ) // update layer nr (if valid)
-        return false;
+    std::cout << "Layer Nr: " << this->layer_nr
+              << "\tK: " << k << std::endl;
     
     const Sizef3 size = this->bb.size();
     const double support_material_radius = sm_pillars_radius();
@@ -477,8 +489,12 @@ bool SLAPrint::write_svg_layer(const size_t k)
 
     fprintf(f,"\t</g>\n");
 
+// Update layer nr sentinel value
+this->layer_nr++;
+    
 // Ensure that the output gets written.
 fflush(f);
+fclose(f);
 
 return true; 
         
@@ -486,12 +502,17 @@ return true;
 
 bool SLAPrint::write_svg_footer() const
 {
-    if( !this->f )
+    FILE *f = fopen(this->fname.c_str(), "a");
+    if(!f)
+    {
+        std::cerr << "Could not open file\n"; 
         return false;
+    }
 
-    fprintf(this->f,"</svg>\n");
-    // Ensure that the output gets written.
-    fflush(this->f);
+    fprintf(f,"</svg>\n");
+    
+    fflush(f);
+    fclose(f);
 
     return true;
 }

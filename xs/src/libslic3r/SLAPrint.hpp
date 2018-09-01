@@ -43,6 +43,9 @@ class SLAPrint
     SLAPrint(Model* _model, FILE *_f) : model(_model), layer_nr(0) {
         f = _f;
     };
+    SLAPrint(Model* _model, const std::string _fname) :
+        model(_model), fname(_fname), layer_nr(0) {};
+    
     bool slice();
     void write_svg(const std::string &outputfile) const;
     bool write_svg_layer(const size_t k);
@@ -54,6 +57,7 @@ class SLAPrint
     Model* model;
     BoundingBoxf3 bb;
     FILE *f;
+    const std::string fname; 
     size_t layer_nr; // to keep track of layer nr in write_svg_layer
     
     void _infill_layer(size_t i, const Fill* fill);
@@ -61,7 +65,7 @@ class SLAPrint
     std::string _SVG_path_d(const Polygon &polygon) const;
     std::string _SVG_path_d(const ExPolygon &expolygon) const;
     std::string get_time() const;
-    bool update_layer_nr();
+    bool is_layer_nr_valid();
 };
 
 }
