@@ -23,6 +23,10 @@
 /// utility function for displaying CLI usage
 void printUsage();
 
+// fill colors
+std::vector<std::string> fill_clrs = {"white", "red", "blue", "yellow"};
+std::string getFillColor(size_t id);
+
 using namespace Slic3r;
 
 int
@@ -158,11 +162,16 @@ main(int argc, char **argv)
             if (outfile.empty()) 
                 outfile = model.objects.front()->input_file + ".svg";
             std::cout << "Export SVG\n";
+
+            // sentinel value for colors
+            static size_t id = 0;
             
-           SLAPrint print(&model, outfile); //init print with model and fname
+            SLAPrint print(&model, outfile, getFillColor(id)); //init print with model, fname and color
             print.config.apply(print_config, true); // apply configuration
             if( !print.slice() ) // slice file
                 return -1;
+
+            id++;
 
             // push into vector
             prints.push_back(print);
@@ -295,4 +304,9 @@ void printUsage()
             std::cout << "** PRINT OPTIONS **\n";
         print_print_options(boost::nowide::cout);
         std::cout << "****\n";
+}
+
+std::string getFillColor(size_t id)
+{
+    return fill_clrs[ id % fill_clrs.size() ];
 }

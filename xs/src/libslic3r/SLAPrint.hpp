@@ -43,8 +43,8 @@ class SLAPrint
     SLAPrint(Model* _model, FILE *_f) : model(_model), layer_nr(0) {
         f = _f;
     };
-    SLAPrint(Model* _model, const std::string _fname) :
-        model(_model), fname(_fname), layer_nr(0) {};
+    SLAPrint(Model* _model, const std::string _fname, const std::string _infillclr) :
+        model(_model), fname(_fname), infill_clr(_infillclr), layer_nr(0) {};
     
     bool slice();
     void write_svg(const std::string &outputfile) const;
@@ -58,6 +58,7 @@ class SLAPrint
     BoundingBoxf3 bb;
     FILE *f;
     const std::string fname; 
+    const std::string infill_clr; 
     size_t layer_nr; // to keep track of layer nr in write_svg_layer
     
     void _infill_layer(size_t i, const Fill* fill);

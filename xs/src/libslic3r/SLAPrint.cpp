@@ -428,7 +428,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
             std::string pd = this->_SVG_path_d(*it);
 
             fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:area=\"%0.4f\" />\n",
-                pd.c_str(), "white", "black", "0", unscale(unscale(it->area()))
+                    pd.c_str(), this->infill_clr.c_str(), "black", "0", unscale(unscale(it->area()))
             );
         }
     } else {
@@ -438,7 +438,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
             std::string pd = this->_SVG_path_d(*it);
 
             fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"perimeter\" />\n",
-                pd.c_str(), "white", "black", "0"
+                pd.c_str(), this->infill_clr.c_str(), "black", "0"
             );
         }
 
@@ -448,7 +448,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
             std::string pd = this->_SVG_path_d(*it);
 
             fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"solid-infill\" />\n",
-                pd.c_str(), "white", "black", "0"
+                pd.c_str(), this->infill_clr.c_str(), "black", "0"
             );
         }
 
@@ -461,7 +461,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
                 std::string pd = this->_SVG_path_d(*e);
 
                 fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"internal-infill\" />\n",
-                    pd.c_str(), "white", "black", "0"
+                    pd.c_str(), this->infill_clr.c_str(), "black", "0"
                 );
             }
         }
