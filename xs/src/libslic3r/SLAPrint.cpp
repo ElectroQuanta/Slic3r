@@ -12,7 +12,7 @@
 
 namespace Slic3r {
 
-bool
+void
 SLAPrint::slice()
 {
     TriangleMesh mesh = this->model->mesh();
@@ -154,7 +154,6 @@ SLAPrint::slice()
         for (size_t i = this->config.raft_layers; i < this->layers.size(); ++i)
             this->layers[i].print_z += first_lh + lh * (this->config.raft_layers-1);
     }
-    return true;
 }
 
 void
