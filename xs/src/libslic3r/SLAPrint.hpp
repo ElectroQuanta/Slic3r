@@ -46,7 +46,7 @@ class SLAPrint
     SLAPrint(Model* _model, const std::string _fname, const std::string _infillclr) :
         model(_model), fname(_fname), infill_clr(_infillclr), layer_nr(0) {};
     
-    bool slice();
+    void slice();
     void write_svg(const std::string &outputfile) const;
     bool write_svg_layer(const size_t k);
     bool write_svg_header() const;

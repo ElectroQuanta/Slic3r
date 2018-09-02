@@ -66,22 +66,10 @@ SLAPrint::slice()
         fill->angle         = Geometry::deg2rad(this->config.fill_angle.value);
         fill->density       = this->config.fill_density.value/100;
 
-<<<<<<< HEAD
-        // Check min_spacing bounds: (lower: > 0); (upper ??)
-        // - lower should probably be equal to nozzle_diameter
-        // - this solves the problem of floating point exception
-        if(fill->min_spacing <= 0)
-        {
-            std::cerr << "Aborted: Infill_extrusion_width must be above 0!\n";
-            return false; 
-        }
-        
-=======
         // Minimum spacing has a lower bound of > 0. Set to a sane default 
         // if the user gets an invalid value here.
         fill->min_spacing = (fill->min_spacing <= 0 ? 0.5 : fill->min_spacing);
 
->>>>>>> f337fdcc62fa8872b3a0b2257e5cd2d06df9ac80
         parallelize<size_t>(
             0,
             this->layers.size()-1,
