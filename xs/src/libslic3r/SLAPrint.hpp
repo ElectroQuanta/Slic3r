@@ -38,13 +38,19 @@ class SLAPrint
     };
     std::vector<SupportPillar> sm_pillars;
 
-    SLAPrint(Model* _model) : model(_model) {};
+    SLAPrint(Model* _model) : model(_model), id(getCount()){};
     
-    SLAPrint(Model* _model, FILE *_f) : model(_model), layer_nr(0) {
+    SLAPrint(Model* _model, FILE *_f) : model(_model), layer_nr(0), id(getCount()) {
         f = _f;
     };
     SLAPrint(Model* _model, const std::string _fname, const std::string _infillclr) :
-        model(_model), fname(_fname), infill_clr(_infillclr), layer_nr(0) {};
+        model(_model), fname(_fname), infill_clr(_infillclr), layer_nr(0), id(getCount()) {};
+
+    SLAPrint(Model* _model, const std::string _fname) :
+        model(_model), fname(_fname), layer_nr(0), id( getCount() )
+    {
+        count++; // incrementing count
+    };
     
     void slice();
     void write_svg(const std::string &outputfile) const;
@@ -60,6 +66,10 @@ class SLAPrint
     const std::string fname; 
     const std::string infill_clr; 
     size_t layer_nr; // to keep track of layer nr in write_svg_layer
+    const size_t id; // based on the nr of objects created 
+
+    static size_t count; // # of objects instantiated
+    static const std::vector<std::string> fill_clrs;
     
     void _infill_layer(size_t i, const Fill* fill);
     coordf_t sm_pillars_radius() const;
@@ -67,6 +77,10 @@ class SLAPrint
     std::string _SVG_path_d(const ExPolygon &expolygon) const;
     std::string get_time() const;
     bool is_layer_nr_valid();
+    // get the current fill color based on # obj
+    std::string getFillColor() const;
+    // get the nr. of objects instantiated
+    static size_t getCount();
 };
 
 }

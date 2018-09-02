@@ -12,6 +12,11 @@
 
 namespace Slic3r {
 
+// Statics initialization
+size_t SLAPrint::count = 0;
+const std::vector<std::string> SLAPrint::fill_clrs = {"white", "red", "blue", "yellow"};
+size_t SLAPrint::getCount(){return count;}
+    
 void
 SLAPrint::slice()
 {
@@ -407,13 +412,15 @@ bool SLAPrint::write_svg_layer(const size_t k)
     const Sizef3 size = this->bb.size();
     const double support_material_radius = sm_pillars_radius();
     size_t i = this->layer_nr;
+    std::string fill_clr = getFillColor();
     const Layer &layer = this->layers[i];
     fprintf(f,
-        "\t<g id=\"layer%zu\" slic3r:z=\"%0.4f\" slic3r:slice-z=\"%0.4f\" slic3r:layer-height=\"%0.4f\">\n",
+            "\t<g id=\"layer%zu\" slic3r:z=\"%0.4f\" slic3r:slice-z=\"%0.4f\" slic3r:layer-height=\"%0.4f\" slic3r:mat=\"%zu\">\n",
         k,
         layer.print_z,
         layer.slice_z,
-        layer.print_z - ((i == 0) ? 0. : this->layers[i-1].print_z)
+        layer.print_z - ((i == 0) ? 0. : this->layers[i-1].print_z),
+        this->id + 1
     );
 
     if (layer.solid) {
@@ -422,7 +429,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
             std::string pd = this->_SVG_path_d(*it);
 
             fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:area=\"%0.4f\" />\n",
-                    pd.c_str(), this->infill_clr.c_str(), "black", "0", unscale(unscale(it->area()))
+                    pd.c_str(), fill_clr.c_str(), "black", "0", unscale(unscale(it->area()))
             );
         }
     } else {
@@ -432,7 +439,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
             std::string pd = this->_SVG_path_d(*it);
 
             fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"perimeter\" />\n",
-                pd.c_str(), this->infill_clr.c_str(), "black", "0"
+                pd.c_str(), fill_clr.c_str(), "black", "0"
             );
         }
 
@@ -442,7 +449,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
             std::string pd = this->_SVG_path_d(*it);
 
             fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"solid-infill\" />\n",
-                pd.c_str(), this->infill_clr.c_str(), "black", "0"
+                pd.c_str(), fill_clr.c_str(), "black", "0"
             );
         }
 
@@ -455,7 +462,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
                 std::string pd = this->_SVG_path_d(*e);
 
                 fprintf(f,"\t\t<path d=\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %s; fill-type: evenodd\" slic3r:type=\"internal-infill\" />\n",
-                    pd.c_str(), this->infill_clr.c_str(), "black", "0"
+                    pd.c_str(), fill_clr.c_str(), "black", "0"
                 );
             }
         }
@@ -509,6 +516,11 @@ bool SLAPrint::write_svg_footer() const
     fclose(f);
 
     return true;
+}
+
+std::string SLAPrint::getFillColor() const
+{
+    return fill_clrs[ this->id % fill_clrs.size() ];
 }
 
 }
