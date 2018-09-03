@@ -264,7 +264,9 @@ main(int argc, char **argv)
         while(cur_layer < total_layers_size - 1)
         {
             for(SLAPrint &print : prints )
-                print.write_svg_layer(cur_layer++);
+                print.write_svg_layer(cur_layer);
+
+            cur_layer++;
             //std::cout << "Cur Layer: " << cur_layer << std::endl;
             //std::vector<SLAPrint>::iterator it = prints.begin();
             //for(; it != prints.end(); it++)
