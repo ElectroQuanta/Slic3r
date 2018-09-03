@@ -81,6 +81,9 @@ class SLAPrint
     std::string getFillColor() const;
     // get the nr. of objects instantiated
     static size_t getCount();
+    // create a polyline path instead of path_d, for compatibility issues
+    std::string _SVG_polyline(const Polygon &polygon) const;
+    std::string _SVG_polyline(const ExPolygon &expolygon) const;
 };
 
 }
