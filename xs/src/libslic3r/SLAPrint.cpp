@@ -412,10 +412,6 @@ bool SLAPrint::write_svg_layer(const size_t k)
     const Sizef3 size = this->bb.size();
     const double support_material_radius = sm_pillars_radius();
     size_t i = this->layer_nr;
-    std::string fill_clr = "none";
-    std::string stroke_clr = getFillColor();
-    std::string pol_tag = "<polyline points= ";
-    float stroke_width = 0.1;
     const Layer &layer = this->layers[i];
     fprintf(f,
             "\t<g id=\"lay%zu_mat%zu\" slic3r:z=\"%0.4f\" slic3r:slice-z=\"%0.4f\" slic3r:layer-height=\"%0.4f\" slic3r:mat=\"%zu\">\n",
@@ -430,31 +426,24 @@ bool SLAPrint::write_svg_layer(const size_t k)
     if (layer.solid) {
         const ExPolygons &slices = layer.slices.expolygons;
         for (ExPolygons::const_iterator it = slices.begin(); it != slices.end(); ++it) {
-            std::string pd = this->_SVG_polyline(*it);
-
-            fprintf(f,"\t\t%s\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %0.4f; fill-type: evenodd\" slic3r:area=\"%0.4f\" />\n",
-                    pol_tag.c_str(), pd.c_str(), fill_clr.c_str(), stroke_clr.c_str(), stroke_width, unscale(unscale(it->area()))
-            );
+            std::string pd = this->_SVG_polyline(*it, "");
+            fprintf(f,"%s", pd.c_str() );
         }
     } else {
         // Perimeters.
         for (ExPolygons::const_iterator it = layer.perimeters.expolygons.begin();
             it != layer.perimeters.expolygons.end(); ++it) {
-            std::string pd = this->_SVG_polyline(*it);
-
-            fprintf(f,"\t\t%s\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %0.4f; fill-type: evenodd\" slic3r:type=\"perimeter\" />\n",
-                    pol_tag.c_str(), pd.c_str(), fill_clr.c_str(), stroke_clr.c_str(), stroke_width
-            );
+            const std::string fill_type = "perimeter";
+            std::string pd = this->_SVG_polyline(*it, fill_type);
+            fprintf(f,"%s", pd.c_str() );
         }
 
         // Solid infill.
         for (ExPolygons::const_iterator it = layer.solid_infill.expolygons.begin();
             it != layer.solid_infill.expolygons.end(); ++it) {
-            std::string pd = this->_SVG_polyline(*it);
-
-            fprintf(f,"\t\t%s\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %0.4f; fill-type: evenodd\" slic3r:type=\"solid-infill\" />\n",
-                    pol_tag.c_str(), pd.c_str(), fill_clr.c_str(), stroke_clr.c_str(), stroke_width
-            );
+            const std::string fill_type = "solid-infill";
+            std::string pd = this->_SVG_polyline(*it, fill_type);
+            fprintf(f,"%s", pd.c_str() );
         }
 
         // Internal infill.
@@ -463,11 +452,9 @@ bool SLAPrint::write_svg_layer(const size_t k)
             const ExPolygons infill = union_ex((*it)->grow());
 
             for (ExPolygons::const_iterator e = infill.begin(); e != infill.end(); ++e) {
-                std::string pd = this->_SVG_polyline(*e);
-
-                fprintf(f,"\t\t%s\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %0.4f; fill-type: evenodd\" slic3r:type=\"internal-infill\" />\n",
-                    pol_tag.c_str(), pd.c_str(), fill_clr.c_str(), stroke_clr.c_str(), stroke_width
-                );
+                const std::string fill_type = "internal-infill";
+                std::string pd = this->_SVG_polyline(*e, fill_type);
+                fprintf(f,"%s", pd.c_str() );
             }
         }
     }
@@ -547,13 +534,27 @@ std::string SLAPrint::_SVG_polyline(const Polygon &polygon) const
 
     return d.str();
 }
-std::string SLAPrint::_SVG_polyline(const ExPolygon &expolygon) const
+std::string SLAPrint::_SVG_polyline(const ExPolygon &expolygon,
+                                    const std::string fill_type) const
 {
     std::string pd;
     const Polygons pp = expolygon;
-    for (Polygons::const_iterator mp = pp.begin(); mp != pp.end(); ++mp) 
-        pd += this->_SVG_polyline(*mp) + " ";
-    return pd;
+    std::string fill_clr = "none";
+    std::string stroke_clr = getFillColor();
+    std::string pol_tag = "<polyline points= ";
+    float stroke_width = 0.1;
+    std::ostringstream d;
+    for (Polygons::const_iterator mp = pp.begin(); mp != pp.end(); ++mp)
+    {
+        pd = this->_SVG_polyline(*mp) + " ";
+        d << "\t\t" << pol_tag << "\"" << pd << "\"";
+        d << " style=\"fill: " << fill_clr
+          << "; stroke: " << stroke_clr
+          << "; stroke-width: " << stroke_width
+          << "; fill-type: evenodd\" slic3r:type="
+          << "\"" << fill_type << "\" />\n";
+    }
+    return d.str();
 }
 
 }
