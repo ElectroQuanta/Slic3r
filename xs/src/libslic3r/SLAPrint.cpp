@@ -433,7 +433,7 @@ bool SLAPrint::write_svg_layer(const size_t k)
             std::string pd = this->_SVG_polyline(*it);
 
             fprintf(f,"\t\t%s\"%s\" style=\"fill: %s; stroke: %s; stroke-width: %0.4f; fill-type: evenodd\" slic3r:area=\"%0.4f\" />\n",
-                    pol_tag.c_str(), pd.c_str(), getFillColor().c_str(), stroke_clr.c_str(), stroke_width, unscale(unscale(it->area()))
+                    pol_tag.c_str(), pd.c_str(), fill_clr.c_str(), stroke_clr.c_str(), stroke_width, unscale(unscale(it->area()))
             );
         }
     } else {
@@ -531,23 +531,28 @@ std::string SLAPrint::_SVG_polyline(const Polygon &polygon) const
 {
     const Sizef3 size = this->bb.size();
     std::ostringstream d;
-    for (Points::const_iterator p = polygon.points.begin(); p != polygon.points.end(); ++p) {
+    // get first point to close path
+    Points::const_iterator p = polygon.points.begin();
+    float x_init = unscale(p->x) - this->bb.min.x;
+    float y_init = size.y - (unscale(p->y) - this->bb.min.y);
+    // Obtain path
+    for ( ; p != polygon.points.end(); ++p) {
         d << unscale(p->x) - this->bb.min.x << ",";
         d << size.y - (unscale(p->y) - this->bb.min.y) << " ";  // mirror Y coordinates as SVG uses downwards Y
     }
     // Repeat 1st point to close path
-    Points::const_iterator p = polygon.points.begin();
-    d << unscale(p->x) - this->bb.min.x << ",";
-    d << size.y - (unscale(p->y) - this->bb.min.y);
+    //Points::const_iterator p_first = polygon.points.begin();
+    d << x_init << ",";
+    d << y_init;
+
     return d.str();
-    
 }
 std::string SLAPrint::_SVG_polyline(const ExPolygon &expolygon) const
 {
     std::string pd;
     const Polygons pp = expolygon;
     for (Polygons::const_iterator mp = pp.begin(); mp != pp.end(); ++mp) 
-        pd += this->_SVG_polyline(*mp);
+        pd += this->_SVG_polyline(*mp) + " ";
     return pd;
 }
 
