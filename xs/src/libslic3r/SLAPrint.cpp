@@ -16,7 +16,10 @@ namespace Slic3r {
 size_t SLAPrint::count = 0;
 const std::vector<std::string> SLAPrint::fill_clrs = {"white", "red", "blue", "yellow"};
 size_t SLAPrint::getCount(){return count;}
-    
+float SLAPrint::size_y = 0.0; // size_y of bounding box
+float SLAPrint::min_x = 0.0; // min_x of bounding box
+float SLAPrint::min_y = 0.0; // min_y of bounding box
+
 void
 SLAPrint::slice()
 {
@@ -159,6 +162,9 @@ SLAPrint::slice()
         for (size_t i = this->config.raft_layers; i < this->layers.size(); ++i)
             this->layers[i].print_z += first_lh + lh * (this->config.raft_layers-1);
     }
+
+    // set bounding box dims
+    set_bb_dims();
 }
 
 void
@@ -516,19 +522,21 @@ std::string SLAPrint::getFillColor() const
 
 std::string SLAPrint::_SVG_polyline(const Polygon &polygon) const
 {
-    const Sizef3 size = this->bb.size();
+    //const Sizef3 size = this->bb.size();
     std::ostringstream d;
+
     // get first point to close path
     Points::const_iterator p = polygon.points.begin();
-    float x_init = unscale(p->x) - this->bb.min.x;
-    float y_init = size.y - (unscale(p->y) - this->bb.min.y);
+    float x_init = unscale(p->x) - min_x;
+    float y_init = size_y - (unscale(p->y) - min_y);
+
     // Obtain path
     for ( ; p != polygon.points.end(); ++p) {
-        d << unscale(p->x) - this->bb.min.x << ",";
-        d << size.y - (unscale(p->y) - this->bb.min.y) << " ";  // mirror Y coordinates as SVG uses downwards Y
+        d << unscale(p->x) - min_x << ",";
+        d << size_y - (unscale(p->y) - min_y) << " ";  // mirror Y coordinates as SVG uses downwards Y
     }
+
     // Repeat 1st point to close path
-    //Points::const_iterator p_first = polygon.points.begin();
     d << x_init << ",";
     d << y_init;
 
@@ -556,6 +564,27 @@ std::string SLAPrint::_SVG_polyline(const ExPolygon &expolygon,
     }
     return d.str();
 }
+
+void SLAPrint::set_bb_dims()
+{
+    const Sizef3 size = this->bb.size();
+    if( getCount() == 1 ) // pass the first size to dimension statics
+    {
+        min_x = this->bb.min.x;
+        min_y = this->bb.min.y;
+        size_y = size.y;
+    }
+    else
+    {
+        if(min_x > this->bb.min.x)
+            min_x = this->bb.min.x;
+        if(min_y > this->bb.min.y)
+            min_y = this->bb.min.y;
+        if(size_y < size.y)
+            size_y = size.y;
+    }
+}
+    
 
 }
 

@@ -69,8 +69,12 @@ class SLAPrint
     const size_t id; // based on the nr of objects created 
 
     static size_t count; // # of objects instantiated
+    static float size_y; // size_y of bounding box
+    static float min_x; // min_x of bounding box
+    static float min_y; // min_y of bounding box
     static const std::vector<std::string> fill_clrs;
-    
+
+    void set_bb_dims(); // set bb dims
     void _infill_layer(size_t i, const Fill* fill);
     coordf_t sm_pillars_radius() const;
     std::string _SVG_path_d(const Polygon &polygon) const;
