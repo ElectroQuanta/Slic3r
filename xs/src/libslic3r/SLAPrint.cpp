@@ -420,9 +420,10 @@ bool SLAPrint::write_svg_layer(const size_t k)
     size_t i = this->layer_nr;
     const Layer &layer = this->layers[i];
     fprintf(f,
-            "\t<g id=\"lay%zu_mat%zu\" slic3r:z=\"%0.4f\" slic3r:slice-z=\"%0.4f\" slic3r:layer-height=\"%0.4f\" slic3r:mat=\"%zu\">\n",
+            "\t<g id=\"L%zu_M%zu_H%0.4f\" slic3r:z=\"%0.4f\" slic3r:slice-z=\"%0.4f\" slic3r:layer-height=\"%0.4f\" slic3r:mat=\"%zu\">\n",
         k,
         this->id + 1,    
+        layer.print_z - ((i == 0) ? 0. : this->layers[i-1].print_z),
         layer.print_z,
         layer.slice_z,
         layer.print_z - ((i == 0) ? 0. : this->layers[i-1].print_z),
