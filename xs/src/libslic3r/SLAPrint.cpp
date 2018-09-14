@@ -419,14 +419,16 @@ bool SLAPrint::write_svg_layer(const size_t k)
     const double support_material_radius = sm_pillars_radius();
     size_t i = this->layer_nr;
     const Layer &layer = this->layers[i];
+    float lh = (layer.print_z - ((i == 0) ? 0. : this->layers[i-1].print_z));
+    int lh_micro = lh * 1000;
     fprintf(f,
-            "\t<g id=\"L%zu_M%zu_H%0.4f\" slic3r:z=\"%0.4f\" slic3r:slice-z=\"%0.4f\" slic3r:layer-height=\"%0.4f\" slic3r:mat=\"%zu\">\n",
+            "\t<g id=\"L%zu_M%zu_H%d\" slic3r:z=\"%0.4f\" slic3r:slice-z=\"%0.4f\" slic3r:layer-height=\"%0.4f\" slic3r:mat=\"%zu\">\n",
         k,
-        this->id + 1,    
-        layer.print_z - ((i == 0) ? 0. : this->layers[i-1].print_z),
+        this->id + 1,
+        lh_micro,
         layer.print_z,
         layer.slice_z,
-        layer.print_z - ((i == 0) ? 0. : this->layers[i-1].print_z),
+        lh,
         this->id + 1
     );
 
