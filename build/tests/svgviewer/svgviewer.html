@@ -1,0 +1,198 @@
+<html>
+<head>
+	<title>Slic3r SVG Viewer</title>
+
+	<style type="text/css">
+
+		body {
+			background:black;
+			color:red;
+		}
+
+		a:visited {
+			color: red;
+		}
+		
+		a:link {
+			color: red;
+		}
+
+		a:active {
+			color: red;
+		}
+
+		a:hover {
+			color: red;
+		}
+
+		#model {
+			margin: 100px;
+			border: red 1px dashed;
+		}
+
+		input[type="range"] {
+		    -webkit-appearance: none;
+		    background-color: red;
+		    height: 2px;
+		}
+		 
+		input[type="range"]::-webkit-slider-thumb {
+		    -webkit-appearance: none;
+		    position: relative;
+		    top: -1px;
+		    z-index: 1;
+		    width: 11px;
+		    height: 11px;
+		 
+		    -webkit-border-radius: 40px;
+		    -moz-border-radius: 40px;
+		    border-radius: 40px;
+		    background-color: red;
+		}
+
+	</style>
+
+	<!--For FF-->
+	<script src="js/html5slider.js"></script>
+
+	<script src="js/jquery.js"></script>
+	<script src="js/modernizr.js"></script>
+	<script src="js/jquery.svg.min.js"></script>
+
+	<script type="text/javascript">
+
+	var svgDoc;
+
+	function getParameterByName(name)
+	{
+	  name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+	  var regexS = "[\\?&]" + name + "=([^&#]*)";
+	  var regex = new RegExp(regexS);
+	  var results = regex.exec(window.location.search);
+	  if(results == null)
+	    return undefined;
+	  else
+	    return decodeURIComponent(results[1].replace(/\+/g, " "));
+	}
+
+
+	function handleDrop(e) {
+		e.stopPropagation(); // Stops some browsers from redirecting.
+		e.preventDefault();
+
+		var files = e.dataTransfer.files;
+		for (var i = 0, f; f = files[i]; i++) {
+			// Read the File objects in this FileList.
+			if (f.type != 'image/svg+xml'){
+				if (f.type != ''){
+					alert("File of type \'" + f.type+"'\' not recognised.")
+				} else {
+					alert("File type not recognised.")
+				}				
+				continue;
+			}
+
+			var reader = new FileReader();
+
+			// Closure to capture the file information.
+			reader.onload = (function(theFile) {
+				return function(e) {
+					svgDoc = $.parseXML(e.target.result);					
+					showSvg();
+				};
+			})(f);
+
+			reader.readAsText(f);
+			$('#svgFilename').text(f.name);
+		}
+	}
+
+
+	function loadSvgModel(svgFilename){
+
+		$.ajax({
+			url: svgFilename,
+			success: function(d){
+				svgDoc = d;
+				showSvg()
+			}
+		});
+	}
+
+	function showSvg(){
+		var width = svgDoc.getElementsByTagName("svg")[0].getAttribute('width')
+		var height = svgDoc.getElementsByTagName("svg")[0].getAttribute('height')
+		$('#model').css('width',width+"mm");
+		$('#model').css('height',height+"mm");
+		$('#model').svg().svg('get').configure({width: width+"mm", height: height+"mm",viewBox:"0 0 "+width+" " + height}) 
+		showLayer();
+	}
+
+	function showLayer(){
+		var groups = svgDoc.getElementsByTagName('g');
+
+		$('#sliceMax').html(groups.length)
+		$('#layer').attr('max',groups.length)
+			
+		var slice = groups[$('#layer').val()]
+
+		if (slice){
+			var svg = $('#model').svg('get')
+			svg.clear();
+			svg.add(slice);
+		}
+	}
+
+	$(document).ready(function() {
+
+		if (!Modernizr.draganddrop) {
+			$('#dndinstructions').text('')
+		}
+		
+		var dropZone = document.getElementsByTagName("body")[0];
+		dropZone.addEventListener('drop', handleDrop, false);
+
+		// for Firefox
+		dropZone.ondragover = function(e) {
+    		e.preventDefault();
+		};
+
+
+		$('#model').svg();
+
+		var svgFilename = getParameterByName('file')||'model.svg';
+
+		if (svgFilename){
+			$('#svgFilename').text(svgFilename);
+			loadSvgModel(svgFilename);
+		}		
+
+		$('#layer').change(function(){
+			$('#sliceCurrent').html($(this).val())
+			showLayer();
+		});
+
+		$("body").keydown(function(e) {
+			if (e.keyCode == 39){
+				$('#layer').val(Math.min( parseInt($('#layer').val())+1 , $('#layer').attr("max") ));
+				$('#layer').change();
+			} else if (e.keyCode == 37){
+				$('#layer').val(Math.max( parseInt($('#layer').val())-1 , $('#layer').attr("min") ));
+				$('#layer').change();
+			}
+		});
+
+	});
+	</script>
+</head>
+<body>
+	<div id="dndinstructions">Drag a SVG file onto the page to display. Left and Right arrows to progress through the slices.</div>
+	<br>
+	</div>
+	File: <span id="svgFilename"></span><br><br>
+	<span id="sliceMin">0</span>
+	<input id="layer" name="layer" type="range"  min="0" max="100" value="0"/>
+	<span id="sliceMax"></span>&nbsp;(<span id="sliceCurrent">0</span>)
+	<div id="model"></div>
+</body>
+</html>

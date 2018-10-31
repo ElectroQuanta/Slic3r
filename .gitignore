@@ -1,5 +1,5 @@
-build
-Build
+#build
+#Build
 Build.bat
 */external/Catch
 Makefile
@@ -27,11 +27,17 @@ CMakeCache.txt
 *.exe
 src/test/test_options.hpp
 src/slic3r
-build/*
+#build/*
+build/tests/svgfiles/*
+build/tests/SLAPrint.hpp
+*.svg
+*.txt
 
 slic3r
 gui_test
 slic3r_test
+backups
+old_config
 compile_commands.json
 tags
 
